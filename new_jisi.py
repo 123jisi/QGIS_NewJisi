@@ -23,13 +23,14 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QDate
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QTableWidgetItem
 from qgis.core import QgsProject, QgsFeature, QgsGeometry, QgsPoint
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .new_jisi_dialog import NewJisiDialog
+from .Impact_table import DlgTable
 import os.path
 
 
@@ -207,6 +208,8 @@ class NewJisi:
             missing_layers.append("Raptor Nests")
         if "Raptor Buffer" not in map_layers:
             missing_layers.append("Raptor Buffer")
+        if "Linear Projects" not in map_layers:
+            missing_layers.append("Raptor Linear")
         if missing_layers:
             msg = "the following layers are missing from the project:\n"
             for lyr in missing_layers:
@@ -223,6 +226,7 @@ class NewJisi:
             # substitute with your code.
             lyrNests = QgsProject.instance().mapLayersByName("Raptor Nests")[0]
             lyrBuffer = QgsProject.instance().mapLayersByName("Raptor Buffer")[0]
+            lyrLinear = QgsProject.instance().mapLayersByName("Linear Projects")[0]
             idxNestID = lyrNests.fields().indexOf("Nest_ID")
             NestID_value = lyrNests.maximumValue(idxNestID) + 1
             Lng_value = self.dlg.spbLongitude.value()
@@ -254,6 +258,27 @@ class NewJisi:
             ftrNest.setGeometry(buffer)
             prv.addFeatures([ftrNest])
             lyrBuffer.reload()
+
+            dlgTable = DlgTable()
+            dlgTable.setWindowTitle("Impacts Table for Nest {}".format(NestID_value))
+            bb = buffer.boundingBox()
+            linears = lyrLinear.getFeatures(bb)
+            for linear in linears:
+                ID_value = linear.attribute("Project")
+                Type_value = linear.attribute("type")
+                Distance_value = linear.geometry().distance(geom)
+                if Distance_value < Buffer_value:
+                    # populate the table with linear data
+                    row = dlgTable.tblImpacts.rowCount()
+                    dlgTable.tblImpacts.insertRow(row)
+                    dlgTable.tblImpacts.setItem(row, 0, QTableWidgetItem(str(ID_value)))
+                    dlgTable.tblImpacts.setItem(row, 1, QTableWidgetItem(str(Type_value)))
+                    dlgTable.tblImpacts.setItem(row, 2, QTableWidgetItem(str("{:4.5f}".format(Distance_value))))
+                    pass
+
+            dlgTable.tblImpacts.sortItems(2)
+            dlgTable.show()
+            dlgTable.exec_()
 
         else:
             QMessageBox.information(self.dlg, "message", "Should only run if cancelled.")
