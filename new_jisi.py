@@ -268,12 +268,15 @@ class NewJisi:
                 Type_value = linear.attribute("type")
                 Distance_value = linear.geometry().distance(geom)
                 if Distance_value < Buffer_value:
+
                     # populate the table with linear data
                     row = dlgTable.tblImpacts.rowCount()
                     dlgTable.tblImpacts.insertRow(row)
                     dlgTable.tblImpacts.setItem(row, 0, QTableWidgetItem(str(ID_value)))
                     dlgTable.tblImpacts.setItem(row, 1, QTableWidgetItem(str(Type_value)))
-                    dlgTable.tblImpacts.setItem(row, 2, QTableWidgetItem(str("{:4.5f}".format(Distance_value))))
+                    twi = QTableWidgetItem("{:4.5f}".format(Distance_value))
+                    twi.setTextAlignment(QtCore.Qt.AlignRight)
+                    dlgTable.tblImpacts.setItem(row, 2, twi)
                     pass
 
             dlgTable.tblImpacts.sortItems(2)
